@@ -1,0 +1,1655 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMSpace - 双人亲密空间</title>
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js"></script>
+    <style>
+        :root {
+            --primary: #ff6b9d;
+            --secondary: #ffa502;
+            --success: #52c41a;
+            --danger: #f5222d;
+            --warning: #faad14;
+            --info: #1890ff;
+            --bg: #fff;
+            --text: #333;
+            --border: #eee;
+        }
+
+        /* 主题配色 */
+        .theme-pink {
+            --primary: #ff6b9d;
+            --secondary: #ff85c0;
+        }
+        .theme-blue {
+            --primary: #1890ff;
+            --secondary: #69c0ff;
+        }
+        .theme-purple {
+            --primary: #722ed1;
+            --secondary: #b37feb;
+        }
+        .theme-green {
+            --primary: #52c41a;
+            --secondary: #95de64;
+        }
+        .theme-dark {
+            --primary: #1f1f1f;
+            --secondary: #595959;
+            --bg: #141414;
+            --text: #fff;
+            --border: #434343;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            transition: all 0.3s ease;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg);
+        }
+
+        /* 头部导航 */
+        .header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 20px;
+            flex: 1;
+        }
+
+        .header-btn {
+            background: rgba(255, 255, 255, 0.3);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .header-btn:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        /* 主内容区 */
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        /* 底部导航 */
+        .nav-bar {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            padding: 10px;
+            border-top: 1px solid var(--border);
+            background: var(--bg);
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            cursor: pointer;
+            color: #999;
+            text-decoration: none;
+            font-size: 12px;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+            background: rgba(255, 107, 157, 0.1);
+        }
+
+        .nav-item-icon {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+
+        /* 认证页面 */
+        .auth-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+        }
+
+        .auth-card {
+            background: white;
+            padding: 40px 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .auth-card h2 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: var(--primary);
+            font-size: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.1);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 107, 157, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--border);
+            color: var(--text);
+            margin-top: 10px;
+        }
+
+        .btn-secondary:hover {
+            background: #ddd;
+        }
+
+        .tab-switch {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid var(--border);
+            background: transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #999;
+            transition: all 0.3s;
+        }
+
+        .tab-btn.active {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        /* 卡片样式 */
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid var(--primary);
+        }
+
+        .card h3 {
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .card-content {
+            color: #666;
+            font-size: 14px;
+        }
+
+        /* 打卡卡片 */
+        .checkin-card {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .checkin-item {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .checkin-item:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .checkin-item.checked {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+        }
+
+        .checkin-icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+
+        .checkin-time {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        /* 输入框 */
+        .textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 14px;
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.1);
+        }
+
+        /* 任务列表 */
+        .task-item {
+            background: white;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .task-item.completed {
+            opacity: 0.6;
+        }
+
+        .task-item.completed .task-title {
+            text-decoration: line-through;
+        }
+
+        .task-title {
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .task-status {
+            font-size: 12px;
+            color: #999;
+            margin-top: 4px;
+        }
+
+        .task-action {
+            display: flex;
+            gap: 8px;
+        }
+
+        .task-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            background: var(--primary);
+            color: white;
+        }
+
+        .task-btn:hover {
+            opacity: 0.8;
+        }
+
+        /* 情绪选择 */
+        .mood-selector {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .mood-item {
+            text-align: center;
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .mood-item:hover {
+            background: rgba(255, 107, 157, 0.1);
+            transform: scale(1.1);
+        }
+
+        .mood-item.selected {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border-radius: 8px;
+        }
+
+        .mood-icon {
+            font-size: 32px;
+            margin-bottom: 4px;
+        }
+
+        .mood-label {
+            font-size: 12px;
+        }
+
+        /* 统计区域 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #999;
+            margin-top: 4px;
+        }
+
+        /* 配对信息 */
+        .couple-info {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .couple-names {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .couple-status {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .couple-days {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        /* 邀请码 */
+        .invite-code {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .code-display {
+            background: var(--border);
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary);
+            margin: 10px 0;
+            font-family: monospace;
+            letter-spacing: 4px;
+        }
+
+        .copy-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        /* 设置页面 */
+        .settings-item {
+            background: white;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .theme-selector {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .theme-option {
+            aspect-ratio: 1;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: white;
+            font-size: 12px;
+        }
+
+        .theme-option:hover {
+            transform: scale(0.95);
+        }
+
+        .theme-option.active {
+            border-color: var(--text);
+        }
+
+        .theme-pink-opt {
+            background: linear-gradient(135deg, #ff6b9d, #ff85c0);
+        }
+
+        .theme-blue-opt {
+            background: linear-gradient(135deg, #1890ff, #69c0ff);
+        }
+
+        .theme-purple-opt {
+            background: linear-gradient(135deg, #722ed1, #b37feb);
+        }
+
+        .theme-green-opt {
+            background: linear-gradient(135deg, #52c41a, #95de64);
+        }
+
+        .theme-dark-opt {
+            background: linear-gradient(135deg, #1f1f1f, #595959);
+        }
+
+        /* 模态框 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg);
+            padding: 30px;
+            border-radius: 16px;
+            max-width: 400px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-close {
+            float: right;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+
+        /* 加载动画 */
+        .loading {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* 提示信息 */
+        .toast {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--text);
+            color: var(--bg);
+            padding: 12px 24px;
+            border-radius: 8px;
+            z-index: 999;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        /* 响应式 */
+        @media (max-width: 480px) {
+            .container {
+                height: 100vh;
+            }
+
+            .content {
+                padding: 16px;
+            }
+
+            .auth-card {
+                padding: 30px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 认证页面 -->
+    <div id="authPage" class="page active">
+        <div class="auth-container">
+            <div class="auth-card">
+                <h2>💕 SMSpace</h2>
+                
+                <div class="tab-switch">
+                    <button class="tab-btn active" onclick="switchAuthTab('login')">登录</button>
+                    <button class="tab-btn" onclick="switchAuthTab('register')">注册</button>
+                </div>
+
+                <!-- 登录表单 -->
+                <div id="loginTab">
+                    <div class="form-group">
+                        <label>邮箱</label>
+                        <input type="email" id="loginEmail" placeholder="输入邮箱地址">
+                    </div>
+                    <div class="form-group">
+                        <label>密码</label>
+                        <input type="password" id="loginPassword" placeholder="输入密码">
+                    </div>
+                    <button class="btn btn-primary" onclick="login()">登录</button>
+                </div>
+
+                <!-- 注册表单 -->
+                <div id="registerTab" style="display: none;">
+                    <div class="form-group">
+                        <label>昵称</label>
+                        <input type="text" id="registerName" placeholder="输入昵称">
+                    </div>
+                    <div class="form-group">
+                        <label>邮箱</label>
+                        <input type="email" id="registerEmail" placeholder="输入邮箱地址">
+                    </div>
+                    <div class="form-group">
+                        <label>密码</label>
+                        <input type="password" id="registerPassword" placeholder="设置密码 (至少6位)">
+                    </div>
+                    <button class="btn btn-primary" onclick="register()">注册</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主应用页面 -->
+    <div id="mainApp" class="container" style="display: none;">
+        <!-- 头部 -->
+        <div class="header">
+            <h1>💕 SMSpace</h1>
+            <button class="header-btn" onclick="showPage('settings')">⚙️ 设置</button>
+        </div>
+
+        <!-- 内容区 -->
+        <div class="content">
+            <!-- 首页 -->
+            <div id="homePage" class="page active">
+                <div class="couple-info" id="coupleInfo" style="display: none;">
+                    <div class="couple-names" id="coupleNames">加载中...</div>
+                    <div class="couple-status" id="coupleStatus">未配对</div>
+                    <div class="couple-days" id="coupleDays"></div>
+                </div>
+
+                <div id="noCoupleInfo" style="text-align: center; padding: 40px 20px;">
+                    <div style="font-size: 48px; margin-bottom: 20px;">💑</div>
+                    <h3 style="margin-bottom: 10px;">还未配对</h3>
+                    <p style="color: #999; margin-bottom: 20px;">邀请你的伴侣加入</p>
+                    <button class="btn btn-primary" onclick="showPage('invite')">创建邀请码</button>
+                </div>
+
+                <!-- 誓言卡片 -->
+                <div id="vowCard" style="display: none; margin-bottom: 20px;">
+                    <div class="card">
+                        <h3>💑 我们的誓言</h3>
+                        <div id="vowContent" class="card-content" style="text-align: center; line-height: 1.8; margin: 15px 0;"></div>
+                        <button class="btn btn-secondary" onclick="editVow()" style="margin-top: 10px;">编辑誓言</button>
+                    </div>
+                </div>
+
+                <!-- 打卡区域 -->
+                <div id="checkinSection" style="display: none;">
+                    <h3 style="margin-bottom: 15px;">📍 每日打卡</h3>
+                    <div class="checkin-card">
+                        <div class="checkin-item" id="morningCheckin" onclick="checkin('morning')">
+                            <div class="checkin-icon">🌅</div>
+                            <div>早上打卡</div>
+                            <div class="checkin-time" id="morningTime">未打卡</div>
+                        </div>
+                        <div class="checkin-item" id="eveningCheckin" onclick="checkin('evening')">
+                            <div class="checkin-icon">🌙</div>
+                            <div>晚上打卡</div>
+                            <div class="checkin-time" id="eveningTime">未打卡</div>
+                        </div>
+                    </div>
+
+                    <!-- 打卡统计 -->
+                    <h3 style="margin-bottom: 15px;">📊 本月统计</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value" id="morningCount">0</div>
+                            <div class="stat-label">早上打卡</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="eveningCount">0</div>
+                            <div class="stat-label">晚上打卡</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 任务页面 -->
+            <div id="tasksPage" class="page">
+                <h2 style="margin-bottom: 20px;">🎯 甜蜜任务</h2>
+                
+                <div style="margin-bottom: 20px;">
+                    <div class="form-group">
+                        <input type="text" id="taskInput" placeholder="创建新任务..." class="form-group">
+                    </div>
+                    <button class="btn btn-primary" onclick="addTask()">添加任务</button>
+                </div>
+
+                <div id="taskList"></div>
+            </div>
+
+            <!-- 日记页面 -->
+            <div id="diaryPage" class="page">
+                <h2 style="margin-bottom: 20px;">📔 每日日记</h2>
+                
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>今天的心情</label>
+                    <div class="mood-selector" id="moodSelector">
+                        <div class="mood-item" data-mood="happy" onclick="selectMood('happy')">
+                            <div class="mood-icon">😊</div>
+                            <div class="mood-label">开心</div>
+                        </div>
+                        <div class="mood-item" data-mood="love" onclick="selectMood('love')">
+                            <div class="mood-icon">😍</div>
+                            <div class="mood-label">甜蜜</div>
+                        </div>
+                        <div class="mood-item" data-mood="normal" onclick="selectMood('normal')">
+                            <div class="mood-icon">😌</div>
+                            <div class="mood-label">平静</div>
+                        </div>
+                        <div class="mood-item" data-mood="sad" onclick="selectMood('sad')">
+                            <div class="mood-icon">😢</div>
+                            <div class="mood-label">难过</div>
+                        </div>
+                        <div class="mood-item" data-mood="angry" onclick="selectMood('angry')">
+                            <div class="mood-icon">😠</div>
+                            <div class="mood-label">生气</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>写下你的想法</label>
+                    <textarea id="diaryContent" class="textarea" placeholder="记录今天发生的事..."></textarea>
+                </div>
+
+                <button class="btn btn-primary" onclick="saveDiary()">保存日记</button>
+
+                <div style="margin-top: 30px;">
+                    <h3 style="margin-bottom: 15px;">📚 历史日记</h3>
+                    <div id="diaryList"></div>
+                </div>
+            </div>
+
+            <!-- 亲密空间页面 -->
+            <div id="spacePage" class="page">
+                <h2 style="margin-bottom: 20px;">💑 亲密空间</h2>
+                
+                <!-- 配对信息 -->
+                <div id="coupleSpace">
+                    <div class="card" style="text-align: center;">
+                        <h3>配对信息</h3>
+                        <div style="margin: 15px 0;">
+                            <p id="partnerInfo" style="margin: 10px 0; color: #666;">加载中...</p>
+                        </div>
+                    </div>
+
+                    <!-- 纪念日 -->
+                    <h3 style="margin-top: 20px; margin-bottom: 15px;">💒 重要日期</h3>
+                    <div class="form-group">
+                        <label>日期</label>
+                        <input type="date" id="anniversaryDate">
+                    </div>
+                    <div class="form-group">
+                        <label>事件名称</label>
+                        <input type="text" id="anniversaryName" placeholder="如：第一次见面">
+                    </div>
+                    <button class="btn btn-primary" onclick="addAnniversary()">添加纪念日</button>
+
+                    <div id="anniversaryList" style="margin-top: 20px;"></div>
+                </div>
+
+                <div id="noCouple" style="text-align: center; padding: 40px 20px;">
+                    <p style="color: #999;">还未配对，无法使用亲密空间</p>
+                </div>
+            </div>
+
+            <!-- 邀请页面 -->
+            <div id="invitePage" class="page">
+                <h2 style="margin-bottom: 20px;">💌 邀请伴侣</h2>
+                
+                <div id="codeSection" style="display: none;">
+                    <p style="color: #666; margin-bottom: 15px;">分享这个邀请码给你的伴侣，他/她可以通过这个码加入你的亲密空间</p>
+                    <div class="invite-code">
+                        <div style="color: #666; margin-bottom: 10px;">你的邀请码</div>
+                        <div class="code-display" id="inviteCode"></div>
+                        <button class="copy-btn" onclick="copyInviteCode()">📋 复制邀请码</button>
+                    </div>
+                </div>
+
+                <div id="joinSection" style="display: none;">
+                    <h3 style="margin-bottom: 15px;">加入伴侣的亲密空间</h3>
+                    <div class="form-group">
+                        <label>邀请码</label>
+                        <input type="text" id="joinCode" placeholder="输入伴侣的邀请码" maxlength="6" style="text-transform: uppercase; letter-spacing: 4px; font-size: 18px; text-align: center;">
+                    </div>
+                    <button class="btn btn-primary" onclick="joinCouple()">加入</button>
+                </div>
+            </div>
+
+            <!-- 设置页面 -->
+            <div id="settingsPage" class="page">
+                <h2 style="margin-bottom: 20px;">⚙️ 设置</h2>
+
+                <h3 style="margin-top: 20px; margin-bottom: 15px;">主题配色</h3>
+                <div class="theme-selector">
+                    <div class="theme-option theme-pink-opt active" onclick="changeTheme('pink')" title="粉色">✓</div>
+                    <div class="theme-option theme-blue-opt" onclick="changeTheme('blue')" title="蓝色">✓</div>
+                    <div class="theme-option theme-purple-opt" onclick="changeTheme('purple')" title="紫色">✓</div>
+                    <div class="theme-option theme-green-opt" onclick="changeTheme('green')" title="绿色">✓</div>
+                    <div class="theme-option theme-dark-opt" onclick="changeTheme('dark')" title="深色">✓</div>
+                </div>
+
+                <h3 style="margin-top: 20px; margin-bottom: 15px;">账户</h3>
+                <div class="settings-item">
+                    <div>
+                        <div style="font-weight: 600;">当前用户</div>
+                        <div style="color: #999; font-size: 12px;" id="currentUser">加载中...</div>
+                    </div>
+                </div>
+
+                <div class="settings-item">
+                    <div>
+                        <div style="font-weight: 600;">配对状态</div>
+                        <div style="color: #999; font-size: 12px;" id="pairStatus">未配对</div>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 20px; margin-bottom: 15px;">其他</h3>
+                <button class="btn btn-secondary" onclick="logout()" style="width: 100%;">退出登录</button>
+            </div>
+        </div>
+
+        <!-- 底部导航 -->
+        <div class="nav-bar">
+            <a class="nav-item active" onclick="showPage('home')">
+                <div class="nav-item-icon">🏠</div>
+                <div>首页</div>
+            </a>
+            <a class="nav-item" onclick="showPage('tasks')">
+                <div class="nav-item-icon">🎯</div>
+                <div>任务</div>
+            </a>
+            <a class="nav-item" onclick="showPage('diary')">
+                <div class="nav-item-icon">📔</div>
+                <div>日记</div>
+            </a>
+            <a class="nav-item" onclick="showPage('space')">
+                <div class="nav-item-icon">💑</div>
+                <div>空间</div>
+            </a>
+            <a class="nav-item" onclick="showPage('invite')">
+                <div class="nav-item-icon">💌</div>
+                <div>邀请</div>
+            </a>
+        </div>
+    </div>
+
+    <!-- 编辑誓言模态框 -->
+    <div id="vowModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeVowModal()">&times;</span>
+            <h2 style="margin-bottom: 20px; color: var(--primary);">💑 编辑誓言</h2>
+            <div class="form-group">
+                <label>我们的誓言</label>
+                <textarea id="vowInput" class="textarea" placeholder="写下你们的誓言..."></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="saveVow()">保存誓言</button>
+        </div>
+    </div>
+
+    <!-- 打卡详情模态框 -->
+    <div id="checkinModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeCheckinModal()">&times;</span>
+            <h2 style="margin-bottom: 20px; color: var(--primary);">📝 打卡详情</h2>
+            
+            <div class="form-group">
+                <label>心情</label>
+                <div class="mood-selector" id="checkinMoodSelector">
+                    <div class="mood-item" data-mood="happy" onclick="selectCheckinMood('happy')">
+                        <div class="mood-icon">😊</div>
+                        <div class="mood-label">开心</div>
+                    </div>
+                    <div class="mood-item" data-mood="love" onclick="selectCheckinMood('love')">
+                        <div class="mood-icon">😍</div>
+                        <div class="mood-label">甜蜜</div>
+                    </div>
+                    <div class="mood-item" data-mood="normal" onclick="selectCheckinMood('normal')">
+                        <div class="mood-icon">😌</div>
+                        <div class="mood-label">平静</div>
+                    </div>
+                    <div class="mood-item" data-mood="sad" onclick="selectCheckinMood('sad')">
+                        <div class="mood-icon">😢</div>
+                        <div class="mood-label">难过</div>
+                    </div>
+                    <div class="mood-item" data-mood="tired" onclick="selectCheckinMood('tired')">
+                        <div class="mood-icon">😴</div>
+                        <div class="mood-label">疲劳</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>说点什么</label>
+                <textarea id="checkinNote" class="textarea" placeholder="写下你此刻的想法..."></textarea>
+            </div>
+
+            <button class="btn btn-primary" onclick="saveCheckin()">完成打卡</button>
+        </div>
+    </div>
+
+    <script>
+        // ========== Firebase 初始化 ==========
+        // 注意：需要替换为你自己的 Firebase 配置
+        const firebaseConfig = {
+            apiKey: "AIzaSyDemoKeyForSmspace123456789",
+            authDomain: "smspace-demo.firebaseapp.com",
+            projectId: "smspace-demo",
+            storageBucket: "smspace-demo.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:abcdef1234567890"
+        };
+
+        // 如果 Firebase 初始化失败，使用本地存储
+        let useLocalStorage = true;
+
+        try {
+            firebase.initializeApp(firebaseConfig);
+            useLocalStorage = false;
+        } catch (e) {
+            console.log('Firebase 初始化失败，使用本地存储');
+            useLocalStorage = true;
+        }
+
+        // ========== 全局变量 ==========
+        let currentUser = null;
+        let coupleId = null;
+        let currentCheckinType = null;
+        let selectedMood = null;
+        let selectedCheckinMood = null;
+
+        // ========== 初始化 ==========
+        function init() {
+            loadTheme();
+            checkAuth();
+        }
+
+        // ========== 认证相关 ==========
+        function switchAuthTab(tab) {
+            const loginTab = document.getElementById('loginTab');
+            const registerTab = document.getElementById('registerTab');
+            const tabBtns = document.querySelectorAll('.tab-btn');
+
+            if (tab === 'login') {
+                loginTab.style.display = 'block';
+                registerTab.style.display = 'none';
+                tabBtns[0].classList.add('active');
+                tabBtns[1].classList.remove('active');
+            } else {
+                loginTab.style.display = 'none';
+                registerTab.style.display = 'block';
+                tabBtns[0].classList.remove('active');
+                tabBtns[1].classList.add('active');
+            }
+        }
+
+        function register() {
+            const name = document.getElementById('registerName').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+
+            if (!name || !email || !password) {
+                showToast('请填写所有字段');
+                return;
+            }
+
+            if (password.length < 6) {
+                showToast('密码至少6位');
+                return;
+            }
+
+            if (useLocalStorage) {
+                // 本地注册
+                const users = JSON.parse(localStorage.getItem('smspace_users') || '{}');
+                if (users[email]) {
+                    showToast('邮箱已注册');
+                    return;
+                }
+
+                users[email] = {
+                    id: 'user_' + Date.now(),
+                    name: name,
+                    email: email,
+                    password: password,
+                    createdAt: new Date().toISOString()
+                };
+
+                localStorage.setItem('smspace_users', JSON.stringify(users));
+                localStorage.setItem('smspace_currentUser', JSON.stringify(users[email]));
+                
+                showToast('注册成功！');
+                setTimeout(() => {
+                    currentUser = users[email];
+                    showMainApp();
+                }, 500);
+            }
+        }
+
+        function login() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            if (!email || !password) {
+                showToast('请填写邮箱和密码');
+                return;
+            }
+
+            if (useLocalStorage) {
+                const users = JSON.parse(localStorage.getItem('smspace_users') || '{}');
+                const user = users[email];
+
+                if (!user || user.password !== password) {
+                    showToast('邮箱或密码错误');
+                    return;
+                }
+
+                localStorage.setItem('smspace_currentUser', JSON.stringify(user));
+                currentUser = user;
+                showToast('登录成功！');
+                setTimeout(() => {
+                    showMainApp();
+                }, 500);
+            }
+        }
+
+        function checkAuth() {
+            const storedUser = localStorage.getItem('smspace_currentUser');
+            if (storedUser) {
+                currentUser = JSON.parse(storedUser);
+                showMainApp();
+            } else {
+                showAuthPage();
+            }
+        }
+
+        function logout() {
+            if (confirm('确定要退出登录吗？')) {
+                localStorage.removeItem('smspace_currentUser');
+                currentUser = null;
+                coupleId = null;
+                showAuthPage();
+            }
+        }
+
+        // ========== UI 显示控制 ==========
+        function showAuthPage() {
+            document.getElementById('authPage').classList.add('active');
+            document.getElementById('mainApp').style.display = 'none';
+        }
+
+        function showMainApp() {
+            document.getElementById('authPage').classList.remove('active');
+            document.getElementById('mainApp').style.display = 'flex';
+            loadCoupleInfo();
+            updateCurrentUser();
+            loadTasks();
+            loadDiaries();
+            loadAnniversaries();
+            loadCheckinStats();
+        }
+
+        function showPage(page) {
+            // 隐藏所有页面
+            const pages = document.querySelectorAll('.page');
+            pages.forEach(p => p.classList.remove('active'));
+
+            // 显示选中页面
+            document.getElementById(page + 'Page').classList.add('active');
+
+            // 更新导航栏
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => item.classList.remove('active'));
+            event.target.closest('.nav-item').classList.add('active');
+
+            // 刷新页面数据
+            if (page === 'tasks') {
+                loadTasks();
+            } else if (page === 'diary') {
+                loadDiaries();
+            } else if (page === 'space') {
+                loadAnniversaries();
+            } else if (page === 'home') {
+                loadCheckinStats();
+            } else if (page === 'invite') {
+                loadInviteUI();
+            } else if (page === 'settings') {
+                updateCurrentUser();
+            }
+        }
+
+        // ========== 配对管理 ==========
+        function loadCoupleInfo() {
+            const couples = JSON.parse(localStorage.getItem('smspace_couples') || '{}');
+            const userCouples = Object.values(couples).filter(c => 
+                c.user1Id === currentUser.id || c.user2Id === currentUser.id
+            );
+
+            if (userCouples.length > 0) {
+                coupleId = userCouples[0].id;
+                const couple = userCouples[0];
+
+                const users = JSON.parse(localStorage.getItem('smspace_users') || '{}');
+                const partner = couple.user1Id === currentUser.id ? 
+                    Object.values(users).find(u => u.id === couple.user2Id) :
+                    Object.values(users).find(u => u.id === couple.user1Id);
+
+                document.getElementById('coupleInfo').style.display = 'block';
+                document.getElementById('noCoupleInfo').style.display = 'none';
+                document.getElementById('checkinSection').style.display = 'block';
+                document.getElementById('coupleSpace').style.display = 'block';
+                document.getElementById('noCouple').style.display = 'none';
+                document.getElementById('joinSection').style.display = 'none';
+                document.getElementById('codeSection').style.display = 'block';
+
+                document.getElementById('coupleNames').textContent = currentUser.name + ' ❤️ ' + (partner?.name || '伴侣');
+                document.getElementById('coupleStatus').textContent = '已配对';
+
+                const days = Math.floor((new Date() - new Date(couple.createdAt)) / (1000 * 60 * 60 * 24));
+                document.getElementById('coupleDays').innerHTML = `<strong>${days}</strong> 天的相伴`;
+
+                // 加载誓言
+                const vow = JSON.parse(localStorage.getItem('smspace_vow_' + coupleId) || 'null');
+                if (vow) {
+                    document.getElementById('vowCard').style.display = 'block';
+                    document.getElementById('vowContent').textContent = vow.content;
+                }
+
+                // 更新配对信息
+                document.getElementById('partnerInfo').textContent = partner ? 
+                    `伴侣: ${partner.name}` : 
+                    '伴侣信息加载中...';
+
+                // 生成邀请码
+                if (!couple.inviteCode) {
+                    couple.inviteCode = generateInviteCode();
+                    couples[couple.id] = couple;
+                    localStorage.setItem('smspace_couples', JSON.stringify(couples));
+                }
+                document.getElementById('inviteCode').textContent = couple.inviteCode;
+            } else {
+                document.getElementById('coupleInfo').style.display = 'none';
+                document.getElementById('noCoupleInfo').style.display = 'block';
+                document.getElementById('checkinSection').style.display = 'none';
+                document.getElementById('coupleSpace').style.display = 'none';
+                document.getElementById('noCouple').style.display = 'block';
+                document.getElementById('codeSection').style.display = 'none';
+                document.getElementById('joinSection').style.display = 'block';
+            }
+        }
+
+        function generateInviteCode() {
+            return 'S' + Math.random().toString(36).substring(2, 7).toUpperCase();
+        }
+
+        function copyInviteCode() {
+            const code = document.getElementById('inviteCode').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                showToast('邀请码已复制！');
+            });
+        }
+
+        function joinCouple() {
+            const code = document.getElementById('joinCode').value.toUpperCase();
+            const couples = JSON.parse(localStorage.getItem('smspace_couples') || '{}');
+            
+            const couple = Object.values(couples).find(c => c.inviteCode === code);
+            if (!couple) {
+                showToast('邀请码无效');
+                return;
+            }
+
+            if (couple.user2Id) {
+                showToast('该邀请码已被使用');
+                return;
+            }
+
+            couple.user2Id = currentUser.id;
+            couples[couple.id] = couple;
+            localStorage.setItem('smspace_couples', JSON.stringify(couples));
+
+            showToast('配对成功！');
+            loadCoupleInfo();
+            document.getElementById('joinCode').value = '';
+        }
+
+        function loadInviteUI() {
+            if (!coupleId) {
+                document.getElementById('codeSection').style.display = 'none';
+                document.getElementById('joinSection').style.display = 'block';
+            } else {
+                document.getElementById('codeSection').style.display = 'block';
+                document.getElementById('joinSection').style.display = 'none';
+            }
+        }
+
+        // ========== 誓言管理 ==========
+        function editVow() {
+            const vow = JSON.parse(localStorage.getItem('smspace_vow_' + coupleId) || '{"content":""}');
+            document.getElementById('vowInput').value = vow.content || '';
+            document.getElementById('vowModal').classList.add('active');
+        }
+
+        function closeVowModal() {
+            document.getElementById('vowModal').classList.remove('active');
+        }
+
+        function saveVow() {
+            const content = document.getElementById('vowInput').value;
+            if (!content.trim()) {
+                showToast('誓言不能为空');
+                return;
+            }
+
+            const vow = {
+                content: content,
+                updatedAt: new Date().toISOString()
+            };
+
+            localStorage.setItem('smspace_vow_' + coupleId, JSON.stringify(vow));
+            document.getElementById('vowContent').textContent = content;
+            document.getElementById('vowCard').style.display = 'block';
+            closeVowModal();
+            showToast('誓言已保存！');
+        }
+
+        // ========== 打卡管理 ==========
+        function checkin(type) {
+            currentCheckinType = type;
+            selectedCheckinMood = null;
+            document.getElementById('checkinNote').value = '';
+            document.querySelectorAll('#checkinMoodSelector .mood-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            document.getElementById('checkinModal').classList.add('active');
+        }
+
+        function selectCheckinMood(mood) {
+            selectedCheckinMood = mood;
+            document.querySelectorAll('#checkinMoodSelector .mood-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            document.querySelector(`#checkinMoodSelector .mood-item[data-mood="${mood}"]`).classList.add('selected');
+        }
+
+        function closeCheckinModal() {
+            document.getElementById('checkinModal').classList.remove('active');
+        }
+
+        function saveCheckin() {
+            const note = document.getElementById('checkinNote').value;
+            const today = new Date().toISOString().split('T')[0];
+            
+            const checkins = JSON.parse(localStorage.getItem('smspace_checkins_' + coupleId) || '[]');
+            
+            checkins.push({
+                id: 'checkin_' + Date.now(),
+                type: currentCheckinType,
+                userId: currentUser.id,
+                mood: selectedCheckinMood || 'normal',
+                note: note,
+                date: today,
+                createdAt: new Date().toISOString()
+            });
+
+            localStorage.setItem('smspace_checkins_' + coupleId, JSON.stringify(checkins));
+            closeCheckinModal();
+            loadCheckinStats();
+            showToast('打卡成功！');
+        }
+
+        function loadCheckinStats() {
+            const checkins = JSON.parse(localStorage.getItem('smspace_checkins_' + coupleId) || '[]');
+            const today = new Date().toISOString().split('T')[0];
+            
+            const morning = checkins.find(c => c.type === 'morning' && c.date === today && c.userId === currentUser.id);
+            const evening = checkins.find(c => c.type === 'evening' && c.date === today && c.userId === currentUser.id);
+
+            // 更新打卡状态
+            if (morning) {
+                document.getElementById('morningCheckin').classList.add('checked');
+                document.getElementById('morningTime').textContent = new Date(morning.createdAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+            } else {
+                document.getElementById('morningCheckin').classList.remove('checked');
+                document.getElementById('morningTime').textContent = '未打卡';
+            }
+
+            if (evening) {
+                document.getElementById('eveningCheckin').classList.add('checked');
+                document.getElementById('eveningTime').textContent = new Date(evening.createdAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+            } else {
+                document.getElementById('eveningCheckin').classList.remove('checked');
+                document.getElementById('eveningTime').textContent = '未打卡';
+            }
+
+            // 统计本月
+            const currentMonth = today.substring(0, 7);
+            const monthCheckins = checkins.filter(c => c.date.startsWith(currentMonth) && c.userId === currentUser.id);
+            const morningCount = monthCheckins.filter(c => c.type === 'morning').length;
+            const eveningCount = monthCheckins.filter(c => c.type === 'evening').length;
+
+            document.getElementById('morningCount').textContent = morningCount;
+            document.getElementById('eveningCount').textContent = eveningCount;
+        }
+
+        // ========== 任务管理 ==========
+        function addTask() {
+            const input = document.getElementById('taskInput');
+            const title = input.value.trim();
+
+            if (!title) {
+                showToast('请输入任务');
+                return;
+            }
+
+            const tasks = JSON.parse(localStorage.getItem('smspace_tasks_' + coupleId) || '[]');
+            tasks.push({
+                id: 'task_' + Date.now(),
+                title: title,
+                creatorId: currentUser.id,
+                status: 'pending',
+                createdAt: new Date().toISOString()
+            });
+
+            localStorage.setItem('smspace_tasks_' + coupleId, JSON.stringify(tasks));
+            input.value = '';
+            loadTasks();
+            showToast('任务已添加！');
+        }
+
+        function loadTasks() {
+            const tasks = JSON.parse(localStorage.getItem('smspace_tasks_' + coupleId) || '[]');
+            const taskList = document.getElementById('taskList');
+            
+            if (tasks.length === 0) {
+                taskList.innerHTML = '<p style="text-align: center; color: #999; padding: 40px 20px;">还没有任务，创建一个吧！</p>';
+                return;
+            }
+
+            taskList.innerHTML = tasks.map(task => {
+                const users = JSON.parse(localStorage.getItem('smspace_users') || '{}');
+                const creator = Object.values(users).find(u => u.id === task.creatorId);
+
+                return `
+                    <div class="task-item ${task.status === 'completed' ? 'completed' : ''}">
+                        <div>
+                            <div class="task-title">${task.title}</div>
+                            <div class="task-status">来自 ${creator?.name || '伴侣'}</div>
+                        </div>
+                        <div class="task-action">
+                            ${task.status === 'pending' ? 
+                                `<button class="task-btn" onclick="completeTask('${task.id}')">完成</button>` :
+                                `<span style="color: var(--success);">✓ 已完成</span>`
+                            }
+                            <button class="task-btn" style="background: #f5222d;" onclick="deleteTask('${task.id}')">删除</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function completeTask(taskId) {
+            const tasks = JSON.parse(localStorage.getItem('smspace_tasks_' + coupleId) || '[]');
+            const task = tasks.find(t => t.id === taskId);
+            if (task) {
+                task.status = 'completed';
+                localStorage.setItem('smspace_tasks_' + coupleId, JSON.stringify(tasks));
+                loadTasks();
+                showToast('任务已完成！');
+            }
+        }
+
+        function deleteTask(taskId) {
+            if (confirm('确定要删除这个任务吗？')) {
+                let tasks = JSON.parse(localStorage.getItem('smspace_tasks_' + coupleId) || '[]');
+                tasks = tasks.filter(t => t.id !== taskId);
+                localStorage.setItem('smspace_tasks_' + coupleId, JSON.stringify(tasks));
+                loadTasks();
+                showToast('任务已删除！');
+            }
+        }
+
+        // ========== 日记管理 ==========
+        function selectMood(mood) {
+            selectedMood = mood;
+            document.querySelectorAll('#moodSelector .mood-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            document.querySelector(`#moodSelector .mood-item[data-mood="${mood}"]`).classList.add('selected');
+        }
+
+        function saveDiary() {
+            const content = document.getElementById('diaryContent').value.trim();
+            const mood = selectedMood || 'normal';
+
+            if (!content) {
+                showToast('日记内容不能为空');
+                return;
+            }
+
+            const diaries = JSON.parse(localStorage.getItem('smspace_diaries_' + coupleId) || '[]');
+            diaries.push({
+                id: 'diary_' + Date.now(),
+                userId: currentUser.id,
+                content: content,
+                mood: mood,
+                createdAt: new Date().toISOString()
+            });
+
+            localStorage.setItem('smspace_diaries_' + coupleId, JSON.stringify(diaries));
+            document.getElementById('diaryContent').value = '';
+            selectedMood = null;
+            document.querySelectorAll('#moodSelector .mood-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            loadDiaries();
+            showToast('日记已保存！');
+        }
+
+        function loadDiaries() {
+            const diaries = JSON.parse(localStorage.getItem('smspace_diaries_' + coupleId) || '[]');
+            const diaryList = document.getElementById('diaryList');
+
+            if (diaries.length === 0) {
+                diaryList.innerHTML = '<p style="text-align: center; color: #999;">还没有日记</p>';
+                return;
+            }
+
+            const moodEmojis = {
+                'happy': '😊',
+                'love': '😍',
+                'normal': '😌',
+                'sad': '😢',
+                'angry': '😠',
+                'tired': '😴'
+            };
+
+            const users = JSON.parse(localStorage.getItem('smspace_users') || '{}');
+
+            diaryList.innerHTML = diaries.reverse().map(diary => {
+                const author = Object.values(users).find(u => u.id === diary.userId);
+                const date = new Date(diary.createdAt).toLocaleDateString('zh-CN');
+
+                return `
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <div>
+                                <strong>${author?.name || '伴侣'}</strong>
+                                <div style="font-size: 12px; color: #999;">${date}</div>
+                            </div>
+                            <div style="font-size: 24px;">${moodEmojis[diary.mood] || '😌'}</div>
+                        </div>
+                        <p style="color: #666; line-height: 1.6;">${diary.content}</p>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ========== 纪念日管理 ==========
+        function addAnniversary() {
+            const date = document.getElementById('anniversaryDate').value;
+            const name = document.getElementById('anniversaryName').value.trim();
+
+            if (!date || !name) {
+                showToast('请填写日期和事件名称');
+                return;
+            }
+
+            const anniversaries = JSON.parse(localStorage.getItem('smspace_anniversaries_' + coupleId) || '[]');
+            anniversaries.push({
+                id: 'anniversary_' + Date.now(),
+                date: date,
+                name: name,
+                createdAt: new Date().toISOString()
+            });
+
+            localStorage.setItem('smspace_anniversaries_' + coupleId, JSON.stringify(anniversaries));
+            document.getElementById('anniversaryDate').value = '';
+            document.getElementById('anniversaryName').value = '';
+            loadAnniversaries();
+            showToast('纪念日已添加！');
+        }
+
+        function loadAnniversaries() {
+            const anniversaries = JSON.parse(localStorage.getItem('smspace_anniversaries_' + coupleId) || '[]');
+            const anniversaryList = document.getElementById('anniversaryList');
+
+            if (anniversaries.length === 0) {
+                anniversaryList.innerHTML = '<p style="text-align: center; color: #999;">还没有纪念日</p>';
+                return;
+            }
+
+            anniversaryList.innerHTML = anniversaries.sort((a, b) => new Date(a.date) - new Date(b.date)).map(anniversary => {
+                const date = new Date(anniversary.date);
+                const daysUntil = Math.ceil((date - new Date()) / (1000 * 60 * 60 * 24));
+
+                return `
+                    <div class="card">
+                        <h3>${anniversary.name}</h3>
+                        <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+                            <span style="color: #999;">${date.toLocaleDateString('zh-CN')}</span>
+                            <span style="color: var(--primary); font-weight: 600;">
+                                ${daysUntil > 0 ? `还有 ${daysUntil} 天` : daysUntil === 0 ? '今天!' : `已过期 ${-daysUntil} 天`}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ========== 主题管理 ==========
+        function changeTheme(theme) {
+            const container = document.documentElement;
+            const themeOptions = document.querySelectorAll('.theme-option');
+
+            themeOptions.forEach(option => option.classList.remove('active'));
+            event.target.closest('.theme-option').classList.add('active');
+
+            container.className = '';
+            container.classList.add('theme-' + theme);
+
+            localStorage.setItem('smspace_theme', theme);
+        }
+
+        function loadTheme() {
+            const theme = localStorage.getItem('smspace_theme') || 'pink';
+            document.documentElement.className = 'theme-' + theme;
+            document.querySelectorAll('.theme-option').forEach(option => option.classList.remove('active'));
+            document.querySelector(`.theme-${theme}-opt`)?.classList.add('active');
+        }
+
+        // ========== 用户信息 ==========
+        function updateCurrentUser() {
+            if (currentUser) {
+                document.getElementById('currentUser').textContent = currentUser.name + ' (' + currentUser.email + ')';
+                
+                if (coupleId) {
+                    document.getElementById('pairStatus').textContent = '已配对';
+                } else {
+                    document.getElementById('pairStatus').textContent = '未配对';
+                }
+            }
+        }
+
+        // ========== 工具函数 ==========
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 2000);
+        }
+
+        // ========== 初始化应用 ==========
+        init();
+    </script>
+</body>
+</html>
